@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marketing AI Agent — Frontend
+
+Chat interface for the [Marketing AI Agent](https://github.com/ferdianmaulana/marketing-ai-agent) backend. Built with Next.js, it lets users ask natural language questions about YouTube channel performance and displays which agent tools were called per response.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14, TypeScript |
+| Styling | Tailwind CSS |
+| Markdown rendering | react-markdown |
+| Infrastructure | Docker, Docker Compose |
+| CI/CD | GitHub Actions |
+
+---
+
+## Project Structure
+
+```
+marketing-ai-agent-ui/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # CI/CD — deploy on push to main
+├── app/
+│   ├── layout.tsx
+│   └── page.tsx            # main chat page
+├── components/
+│   ├── chat_window.tsx     # message list with markdown rendering
+│   ├── chat_input.tsx      # input box with send button
+│   └── tool_badge.tsx      # badges showing which tools were called
+├── Dockerfile
+├── docker-compose.yml
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+- Node.js 20+
+- Running instance of the [backend](https://github.com/ferdianmaulana/marketing-ai-agent)
+
+### Local Development
 
 ```bash
+# 1. Clone the repo
+git clone https://github.com/ferdianmaulana/marketing-ai-frontend.git
+cd marketing-ai-frontend
+
+# 2. Install dependencies
+npm install
+
+# 3. Set up environment variables
+
+# 4. Run the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Run with Docker
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up -d --build
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Features
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Chat interface** — conversational UI to interact with the AI agent
+- **Tool badges** — shows which backend tools the agent called per response
+- **Markdown rendering** — agent responses render with proper formatting
+- **Chat history** — full conversation context sent with each request
+- **Responsive input** — auto-expanding textarea, send on Enter
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Tool Badges
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Each agent response shows which tools were called, color-coded by type:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Badge | Tool |
+|---|---|
+| 🔵 Channel stats | `get_channel_stats` |
+| 🟣 Top videos | `get_top_videos` |
+| 🩵 Compare channels | `compare_channels` |
+| 🟡 List channels | `list_tracked_channels` |
