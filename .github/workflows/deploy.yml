@@ -34,12 +34,13 @@ jobs:
               git clone https://github.com/${{ github.repository }}.git .
             fi
 
-            # Write frontend env
-            cat > .env.local << 'ENVEOF'
+            # Write .env BEFORE building so Next.js picks it up at build time
+            cat > .env << 'ENVEOF'
             NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
             ENVEOF
 
-            # Build and restart
+            # Force rebuild so the new build arg is baked in
+            sudo docker compose down
             sudo docker compose up -d --build
 
             echo "Frontend deploy complete."
