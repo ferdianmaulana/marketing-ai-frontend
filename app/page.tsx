@@ -1,65 +1,141 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import chat_window from "@/components/chat_window";
+import chat_input from "@/components/chat_input";
+
+export type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  tools_used?: string[];
+  loading?: boolean;
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content:
+        "Hi! I'm your Marketing Analytics Agent. Ask me anything about your tracked YouTube channels — performance stats, top videos, competitor comparisons, or optimization suggestions.",
+      tools_used: [],
+    },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  const ChatWindow = chat_window;
+  const ChatInput = chat_input;
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleSend(question: string) {
+    if (!question.trim() || loading) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: question,
+    };
+
+    const loadingMsg: Message = {
+      id: "loading",
+      role: "assistant",
+      content: "",
+      loading: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, loadingMsg]);
+    setLoading(true);
+
+    // Build chat history excluding welcome and loading messages
+    const history = messages
+      .filter((m) => m.id !== "welcome" && !m.loading)
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    try {
+      const res = await fetch(`${API_URL}/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, chat_history: history }),
+      });
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+      const data = await res.json();
+
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.answer,
+        tools_used: data.tools_used || [],
+      };
+
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== "loading"),
+        assistantMsg,
+      ]);
+    } catch (err) {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content:
+          "Sorry, I couldn't reach the backend. Please check if the API is running.",
+        tools_used: [],
+      };
+      setMessages((prev) => [
+        ...prev.filter((m) => m.id !== "loading"),
+        errorMsg,
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="flex flex-col h-screen bg-gray-950 text-gray-100">
+      {/* Header */}
+      <header className="flex items-center gap-3 px-6 py-4 border-b border-gray-800 bg-gray-900">
+        <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm font-bold">
+          M
+        </div>
+        <div>
+          <h1 className="text-sm font-semibold text-white">
+            Marketing AI Agent
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-xs text-gray-400">
+            YouTube channel analytics · Powered by LLM + LangChain
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs text-gray-400">Live</span>
         </div>
-      </main>
-    </div>
+      </header>
+
+      {/* Chat area */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="max-w-3xl mx-auto flex flex-col gap-4">
+          <ChatWindow messages={messages} />
+          <div ref={bottomRef} />
+        </div>
+      </div>
+
+      {/* Input */}
+      <div className="border-t border-gray-800 bg-gray-900 px-4 py-4">
+        <div className="max-w-3xl mx-auto">
+          <ChatInput onSend={handleSend} loading={loading} />
+          <p className="text-xs text-gray-600 mt-2 text-center">
+            Try: &quot;What channels are tracked?&quot; · &quot;Show top videos
+            for [channel]&quot; · &quot;Compare [A] vs [B]&quot;
+          </p>
+        </div>
+      </div>
+    </main>
   );
 }

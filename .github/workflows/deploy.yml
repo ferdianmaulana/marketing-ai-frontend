@@ -1,0 +1,45 @@
+name: Deploy Frontend to Tencent VM
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          port: ${{ secrets.VM_PORT }}
+          script: |
+            set -e
+
+            mkdir -p ~/marketing-ai-frontend
+            cd ~/marketing-ai-frontend
+
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }}.git .
+            fi
+
+            # Write frontend env
+            cat > .env.local << 'ENVEOF'
+            NEXT_PUBLIC_API_URL=${{ secrets.API_URL }}
+            ENVEOF
+
+            # Build and restart
+            sudo docker compose up -d --build
+
+            echo "Frontend deploy complete."
